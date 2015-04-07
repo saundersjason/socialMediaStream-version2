@@ -13,7 +13,7 @@ namespace SavannahState.SocialMedia
     public class FacebookRepository : IFeedRepository
     {
         private String _accessToken = "";
-        private const String _queryURL = "https://graph.facebook.com/v2.2/81383047843/posts";
+        private String _queryURL = "https://graph.facebook.com/v2.2/";
         private Int16 _queryLimit;
         private Int16 _daySpan;
         private List<Post> _allPosts;
@@ -21,14 +21,17 @@ namespace SavannahState.SocialMedia
         private DateTime _dateSince;
         private DateTime _dateUntil = DateTime.Now;
         private String _feedParamsProvided = "";
+        private String _userAccount = "";
+        private String _handle = "";
         
         public FacebookRepository()
         {
             _allPosts = new List<Post>();
         }
 
-        public Result GetFeed(String accessToken, String feedParameters, Int16 maxResults, Int16 numberDays, String accessTokenSecret, String consumerKey, String consumerSecret, String userId)
+        public Result GetFeed(String feedParameters, Int16 maxResults, Int16 numberDays, AccessToken accessToken, String userAccount, String userHandle)
         {
+            _allPosts.Clear();
             if (maxResults > 0)
             {
                 _queryLimit = maxResults;
@@ -45,9 +48,15 @@ namespace SavannahState.SocialMedia
             }
             _dateSince = DateTime.Now.AddDays(_daySpan);
 
-            if (!String.IsNullOrEmpty(accessToken))
+
+            _userAccount = userAccount;
+            _queryURL += _userAccount + "/posts";
+
+            _handle = userHandle;
+
+            if (accessToken != null)
             {
-                _accessToken = accessToken;
+                _accessToken = accessToken.accessToken;
                 if (_allPosts == null)
                 {
                     _allPosts = new List<Post>();
@@ -268,6 +277,7 @@ namespace SavannahState.SocialMedia
                             tempPost.url = url;
                             tempPost.image = image;
                             tempPost.content = Utility.FormatPost(Utility.UrlFinder(caption), "http://www.facebook.com/hashtag/");
+                            tempPost.accountName = _handle;
                             rawPosts.Add(tempPost);
                         }
                     }

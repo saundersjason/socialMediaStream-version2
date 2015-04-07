@@ -21,18 +21,40 @@ namespace SavannahState
         private String _TwitterAccessTokenSecret = WebConfigurationManager.AppSettings["twitter_oauthtokensecret"];
         private String _TwitterConsumerKey = WebConfigurationManager.AppSettings["twitter_oauthconsumerkey"];
         private String _TwitterConsumerSecret = WebConfigurationManager.AppSettings["twitter_oauthconsumersecret"];
-        private String _TwitterScreenName = WebConfigurationManager.AppSettings["twitter_screenname"];
 
 
+        List<Account> _FacebookAccounts = new List<Account>() { 
+                new Account(){
+                    id = "81383047843",
+                    name = "savannahstate"
+                },
+                new Account(){
+                    id = "186864151626",
+                    name = "Asa H. Gordon Library at Savannah State University"
+                }
+            };
 
-        //_FacebookAccessToken - 111f44b4b528cf408f9662ab629e39d8Reset
+        List<Account> _InstagramAccounts = new List<Account>() { 
+                new Account(){
+                    id = "455868730",
+                    name = "savannahstate"
+                },
+                new Account(){
+                    id = "324926923",
+                    name = "write_ssu"
+                }
+            };
 
-        //Consumer Key (API Key)9gRaRlR5zAWPPQVXZ9P5xA
-        //Consumer Secret (API Secret)OJrKFw1sxnmTHOBWF3SoWtTbzjQDNP8w2sy90wy8
-        //Access Token87486291-4Wh2ZA5kCxsB68AhTIbUsTkIL4c6HyodsX8AODZE
-        //Access Token SecretK7cG41W4Wicemn2syKmSxmTjPbCA2JtheONAcfB6mP8
-
-
+        List<Account> _TwitterAccounts = new List<Account>() { 
+                new Account(){
+                    id = "savannahstate",
+                    name = "savannahstate"
+                },
+                new Account(){
+                    id = "SavStUTigerAdm",
+                    name = "SavStUTigerAdm"
+                }
+            };
 
 
 
@@ -46,31 +68,40 @@ namespace SavannahState
         public MediaItem GetAllSocialPosts(Int32 numberOfPosts, String mediaType, String facebookParams, String twitterParams, String instagramParams)
         {
 
-
-
-
-
-            /*
-             NEXTURL's must be sent out in the same order as they are processed when dealing with multiple accounts from the same media service. If a nexturl is not available for a particular account, send a blank space or null as a placeholder.
-             */
-
-
-
-
-
-            Result facebookResult=null;
-            Result instagramResult=null;
-            Result twitterResult=null;
+            Result facebookResult = null;
+            Result instagramResult = null;
+            Result twitterResult = null;
 
             MediaItem mediaItems = new MediaItem();
             if (mediaType == "instagram" || mediaType == "all")
             {
+                AccessToken instagramAccessToken = new AccessToken() { accessToken = _InstagramAccessToken };
                 if (!String.IsNullOrEmpty(instagramParams))
                 {
-                    String[] instagramParamArr = instagramParams.Split('|');
-                    foreach (String instagramParam in instagramParamArr)
+                    String[] instagramParamArr = instagramParams.Split('~');
+                    Int32 instagramAccountCnt = 0;
+                    if (instagramParamArr.Length == _InstagramAccounts.Count)
                     {
-                        instagramResult = new InstagramRepository().GetFeed(_InstagramAccessToken, instagramParam, 20, 2, "", "", "", "");
+                        foreach (String instagramParam in instagramParamArr)
+                        {
+                            instagramResult = new InstagramRepository().GetFeed(instagramParam, 20, 2, instagramAccessToken, _InstagramAccounts[instagramAccountCnt].id, _InstagramAccounts[instagramAccountCnt].name);
+                            if (instagramResult != null)
+                            {
+                                mediaItems.posts = mediaItems.posts.Concat(instagramResult.posts).ToList();
+                                if (!String.IsNullOrEmpty(instagramResult.NextUrl))
+                                {
+                                    mediaItems.nextUrls.Add(new NextUrl { urlType = "instagram", url = instagramResult.NextUrl });
+                                }
+                            }
+                            instagramAccountCnt++;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (Account instagramAccount in _InstagramAccounts)
+                    {
+                        instagramResult = new InstagramRepository().GetFeed("", 20, 2, instagramAccessToken, instagramAccount.id, instagramAccount.name);
                         if (instagramResult != null)
                         {
                             mediaItems.posts = mediaItems.posts.Concat(instagramResult.posts).ToList();
@@ -84,12 +115,33 @@ namespace SavannahState
             }
             if (mediaType == "facebook" || mediaType == "all")
             {
+                AccessToken facebookAccessToken = new AccessToken() { accessToken = _FacebookAccessToken };
                 if (!String.IsNullOrEmpty(facebookParams))
                 {
-                    String[] facebookParamArr = facebookParams.Split('|');
-                    foreach (String facebookParam in facebookParamArr)
+                    String[] facebookParamArr = facebookParams.Split('~');
+                    Int32 facebookAccountCnt = 0;
+                    if (facebookParamArr.Length == _FacebookAccounts.Count)
                     {
-                        facebookResult = new FacebookRepository().GetFeed(_FacebookAccessToken, facebookParam, 20, 2, "", "", "", "");
+                        foreach (String facebookParam in facebookParamArr)
+                        {
+                            facebookResult = new FacebookRepository().GetFeed(facebookParam, 20, 2, facebookAccessToken, _FacebookAccounts[facebookAccountCnt].id, _FacebookAccounts[facebookAccountCnt].name);
+                            if (facebookResult != null)
+                            {
+                                mediaItems.posts = mediaItems.posts.Concat(facebookResult.posts).ToList();
+                                if (!String.IsNullOrEmpty(facebookResult.NextUrl))
+                                {
+                                    mediaItems.nextUrls.Add(new NextUrl { urlType = "facebook", url = facebookResult.NextUrl });
+                                }
+                            }
+                            facebookAccountCnt++;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (Account facebookAccount in _FacebookAccounts)
+                    {
+                        facebookResult = new FacebookRepository().GetFeed("", 20, 2, facebookAccessToken, facebookAccount.id, facebookAccount.name);
                         if (facebookResult != null)
                         {
                             mediaItems.posts = mediaItems.posts.Concat(facebookResult.posts).ToList();
@@ -103,12 +155,14 @@ namespace SavannahState
             }
             if (mediaType == "twitter" || mediaType == "all")
             {
+                AccessToken twitterAccessToken = new AccessToken() { accessToken = _TwitterAccessToken, accessTokenSecret = _TwitterAccessTokenSecret, consumerKey = _TwitterConsumerKey, consumerSecret = _TwitterConsumerSecret };
                 if (!String.IsNullOrEmpty(twitterParams))
                 {
-                    String[] twitterParamArr = twitterParams.Split('|');
+                    String[] twitterParamArr = twitterParams.Split('~');
+                    Int32 twitterAccountCnt = 0;
                     foreach (String twitterParam in twitterParamArr)
                     {
-                        twitterResult = new TwitterRepository().GetFeed(_TwitterAccessToken, twitterParam, 20, 2, _TwitterAccessTokenSecret, _TwitterConsumerKey, _TwitterConsumerSecret, _TwitterScreenName);
+                        twitterResult = new TwitterRepository().GetFeed(twitterParam, 20, 2, twitterAccessToken, _TwitterAccounts[twitterAccountCnt].id, _TwitterAccounts[twitterAccountCnt].name);
                         if (twitterResult != null)
                         {
                             mediaItems.posts = mediaItems.posts.Concat(twitterResult.posts).ToList();
@@ -117,6 +171,24 @@ namespace SavannahState
                                 mediaItems.nextUrls.Add(new NextUrl { urlType = "twitter", url = twitterResult.NextUrl });
                             }
                         }
+                        twitterAccountCnt++;
+                    }
+                }
+                else
+                {
+                    foreach (Account twitterAccount in _TwitterAccounts)
+                    {
+                        Int32 twitterAccountCnt = 0;
+                        twitterResult = new TwitterRepository().GetFeed("", 20, 2, twitterAccessToken, twitterAccount.id, twitterAccount.name);
+                        if (twitterResult != null)
+                        {
+                            mediaItems.posts = mediaItems.posts.Concat(twitterResult.posts).ToList();
+                            if (!String.IsNullOrEmpty(twitterResult.NextUrl))
+                            {
+                                mediaItems.nextUrls.Add(new NextUrl { urlType = "twitter", url = twitterResult.NextUrl });
+                            }
+                        }
+                        twitterAccountCnt++;
                     }
                 }
             }
@@ -159,5 +231,12 @@ namespace SavannahState
         public NextUrl()
         {
         }
+    }
+
+    public struct Account
+    {
+
+        public String id { get; set; }
+        public String name { get; set; }
     }
 }

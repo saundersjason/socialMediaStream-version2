@@ -11,7 +11,7 @@ namespace SavannahState.SocialMedia
     public class InstagramRepository:IFeedRepository
     {
         private String _accessToken = "";
-        private const String _queryURL = "https://api.instagram.com/v1/users/455868730/media/recent/";
+        private String _queryURL = "https://api.instagram.com/v1/users/";
         private Int16 _queryLimit;
         private Int32 _daySpan;
         private List<Post> _allPosts;
@@ -19,13 +19,16 @@ namespace SavannahState.SocialMedia
         private DateTime _min_timestamp;
         private DateTime _max_timestamp;
         private String _feedParamsProvided = "";
+        private String _userAccount = "";
+        private String _handle = "";
 
         public InstagramRepository() {
             _allPosts = new List<Post>();
         }
 
-        public Result GetFeed(String accessToken, String feedParameters, Int16 maxResults, Int16 numberDays, String accessTokenSecret, String consumerKey, String consumerSecret, String userId)
+        public Result GetFeed(String feedParameters, Int16 maxResults, Int16 numberDays, AccessToken accessToken, String userAccount, String userHandle)
         {
+            _allPosts.Clear();
             if (maxResults > 0)
             {
                 _queryLimit = maxResults;
@@ -49,9 +52,14 @@ namespace SavannahState.SocialMedia
             _max_timestamp = new DateTime(today.Year, today.Month, today.Day, 23, 59, 59);
             _min_timestamp = new DateTime(pastDate.Year, pastDate.Month, pastDate.Day, 23, 59, 59);
 
-            if (!String.IsNullOrEmpty(accessToken))
+            _userAccount = userAccount;
+            _queryURL += _userAccount + "/media/recent/";
+
+            _handle = userHandle;
+
+            if (accessToken !=null)
             {
-                _accessToken = accessToken;
+                _accessToken = accessToken.accessToken;
                 if (_allPosts == null)
                 {
                     _allPosts = new List<Post>();
@@ -236,6 +244,7 @@ namespace SavannahState.SocialMedia
                             tempPost.url = url;
                             tempPost.image = image;
                             tempPost.content = Utility.FormatPost(Utility.UrlFinder(caption), "http://www.twitter.com/hashtag/");
+                            tempPost.accountName = _handle;
                             rawPosts.Add(tempPost);
                         }
                     }
